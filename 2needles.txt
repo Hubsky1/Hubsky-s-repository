@@ -1,0 +1,299 @@
+#include <Arduino.h>
+#include <U8g2lib.h>
+//#include <Wire.h>
+
+uint8_t interruptPin = 3;
+uint8_t lowSpeedPin = 5;
+uint8_t highSpeedPin = 6;
+uint8_t btPin = 12;
+uint8_t buttonPlus = 7;
+uint8_t buttonMinus = 8;
+uint8_t buttonEnter = 9;
+uint8_t buttonBack = 10;
+uint8_t buttonPedal = 11;
+uint8_t btStatus = 4;
+
+uint8_t step1 = 0;
+uint8_t step2 = 0;
+uint8_t step3 = 0;
+uint8_t step4 = 0;
+//uint8_t stepBt = 3;
+uint8_t currentStep = 0;
+volatile int pulseCounter = 0;
+int idMenu = 0;
+uint8_t buttonPlusStatus = 0;
+uint8_t buttonMinusStatus = 0;
+uint8_t buttonEnterStatus = 0;
+uint8_t buttonBackStatus = 0;
+
+void Pulse();
+void DoStep();
+void DoBt();
+void program();
+void display(int s1, int s2, int s3, int s4);
+
+U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0); // model wyswietlacza
+
+void setup()
+{
+	pinMode(interruptPin, INPUT);
+	pinMode(lowSpeedPin, OUTPUT);
+	pinMode(highSpeedPin, OUTPUT);
+	pinMode(btPin, OUTPUT);
+	pinMode(buttonPlus, INPUT);
+	pinMode(buttonMinus, INPUT);
+	pinMode(buttonEnter, INPUT);
+	pinMode(buttonBack, INPUT);
+	pinMode(buttonPedal, INPUT);
+	pinMode(btStatus, INPUT);
+
+	Serial.begin(115200);
+
+	u8g2.begin();
+	u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_logisoso16_tr);
+  //u8g2.drawStr(10,29,"99 99 99 99");
+  //u8g2.sendBuffer();
+
+  attachInterrupt(digitalPinToInterrupt(interruptPin), Pulse, RISING);
+}
+
+void loop()
+{
+	buttonPlusStatus = digitalRead(buttonPlus);
+	buttonMinusStatus = digitalRead(buttonMinus);
+	buttonEnterStatus = digitalRead(buttonEnter);
+	buttonBackStatus = digitalRead(buttonBack);
+	//Serial.println(buttonPlusStatus);
+  Serial.print("idMenu");
+  Serial.println(idMenu);
+  display(step1, step2, step3, step4);
+
+	if(buttonPlusStatus == HIGH){
+		if(idMenu == 4){
+      idMenu = 0;
+		}
+   else{
+		idMenu+=1;
+   }
+		delay(200);
+    return;
+	}
+	else if(buttonMinusStatus == HIGH){
+		if(idMenu == 0){
+      idMenu = 4;
+		}
+   else{
+		idMenu-=1;
+   }
+	  delay(200);
+    return;
+	}
+
+  if(digitalRead(buttonEnter) != HIGH){
+  	Serial.println(step1);
+  	Serial.println(step2);
+  	Serial.println(step3);
+  	Serial.println(step4);
+    return;
+  }
+
+  if(digitalRead(buttonBack) == HIGH){
+  	program();
+  	return;
+  }
+
+	while (idMenu == 1 && digitalRead(buttonBack) != HIGH){
+		if (digitalRead(buttonPlus) == HIGH){
+			step1+=1;
+      delay(200);
+		}
+		else if (digitalRead(buttonMinus) == HIGH){
+		  step1-=1;
+      delay(200);
+		}
+    Serial.print ("Step 1: ");
+    Serial.println(step1);
+    display(step1, step2, step3, step4);
+    delay(200);
+	}
+	while (idMenu == 2 && digitalRead(buttonBack) != HIGH){
+		if (digitalRead(buttonPlus) == HIGH){
+			step2+=1;
+      delay(200);
+		}
+		else if (digitalRead(buttonMinus) == HIGH){
+		  step2-=1;
+      delay(200);
+		}
+    Serial.print ("Step 2: ");
+    Serial.println(step2);
+    display(step1, step2, step3, step4);
+    delay(200);
+	}
+	while (idMenu == 3 && digitalRead(buttonBack) != HIGH){
+		if (digitalRead(buttonPlus) == HIGH){
+			step3+=1;
+      delay(200);
+		}
+		else if (digitalRead(buttonMinus) == HIGH){
+		  step3-=1;
+      delay(200);
+		}
+    Serial.print ("Step 3: ");
+    Serial.println(step3);
+    display(step1, step2, step3, step4);
+    delay(200);
+	}
+	while (idMenu == 4 && digitalRead(buttonBack) != HIGH){
+		if (digitalRead(buttonPlus) == HIGH){
+			step4+=1;
+      delay(200);
+		}
+		else if (digitalRead(buttonMinus) == HIGH){
+		  step4-=1;
+      delay(200);
+		}
+    Serial.print ("Step 4: ");
+    Serial.println(step4);
+    display(step1, step2, step3, step4);    
+    delay(200);
+	}	
+
+}
+
+
+void Pulse(){
+	pulseCounter+=1;
+	//Serial.println("Pulse");
+}
+
+void DoStep(){
+	Serial.println("##DoStep##");
+	Serial.print("STEP ");
+	Serial.println(currentStep);
+	Serial.println(pulseCounter);
+	digitalWrite(btPin, LOW);
+	digitalWrite(highSpeedPin, HIGH);
+	Serial.println("--DoStep--");
+	delay(100);
+}
+
+void DoBt(){
+	while(digitalRead(btStatus) == HIGH){
+		Serial.println("DoBt");
+		digitalWrite(btPin, HIGH);
+	}
+	digitalWrite(btPin, LOW);
+	pulseCounter = 0;
+	Serial.println("bt");
+	delay(100);
+}
+
+
+
+void program(){
+	if(digitalRead(buttonPedal) == LOW){
+		if(currentStep == 0){
+			DoBt();
+			Serial.print(pulseCounter);
+			while((pulseCounter < step1*3)){
+				DoStep();
+			}
+			currentStep+=1;
+			pulseCounter = 0;
+		}
+		 if(currentStep == 1){ //dodaj digitalRead(buttonPedal)
+			DoBt();
+			while(pulseCounter < step2*3){
+				DoStep();
+			}
+			currentStep+=1;
+			pulseCounter = 0;
+		}
+		if(currentStep == 2){
+			DoBt();
+			while(pulseCounter < step3*3){
+				DoStep();
+			}
+			currentStep+=1;
+			pulseCounter = 0;
+		}
+		if(currentStep == 3){
+			DoBt();
+			while(pulseCounter < step2*3){
+				DoStep();
+			}
+			currentStep+=1;
+			pulseCounter = 0;
+		}
+		if(currentStep == 4){
+			DoBt();
+			while(pulseCounter < step4*3){
+				DoStep();
+			}
+			DoBt();
+			currentStep = 0;
+			pulseCounter = 0;
+		}
+	}
+}
+
+void display(int s1, int s2, int s3, int s4){
+  char dc1[10];
+  sprintf(dc1, "%d %d %d %d", s1, s2, s3, s4);
+	u8g2.clearBuffer();
+	if(idMenu == 1){
+		u8g2.drawStr(15,3, ".");	
+	}
+	else if(idMenu == 2){
+		u8g2.drawStr(35,3,".");
+	}
+	else if(idMenu == 3){
+		u8g2.drawStr(55,3,".");
+	}
+	else if(idMenu == 4){
+		u8g2.drawStr(75,3,".");
+	}
+	//u8g2.drawStr(10,3, ".");
+  u8g2.drawStr(10,29,dc1);
+  u8g2.sendBuffer();
+  Serial.print("display: ");
+  Serial.println(dc1);
+}
+
+/*
+{
+	if(digitalRead(buttonPedal) == HIGH && a == 0)
+	doBt(); a == a++
+	{
+		if(digitalRead(buttonPedal) == High && a == 1)
+		doBt();
+		while(pulseCounter < stepBt*45){
+			
+			Serial.Print(pulseCounter);
+			return;
+			a == a++
+			else 
+				if(digitalRead(buttonPedal) == HIGH && a == 2)
+					while(pulseCounter < stepBt*45){
+			
+			Serial.Print(pulseCounter);
+			return;
+			a == a++
+				else
+					if(digitalRead(buttonPedal) == HIGH && a == 3)
+		}	   while(pulseCounter < stepBt*45){
+			
+			Serial.Print(pulseCounter);
+			return;
+			a == a++
+					else
+						if(digitalRead(buttonPedal) == HIGH && a == 4)
+		}	   while(pulseCounter < stepBt*45){
+			
+			Serial.Print(pulseCounter);
+			return;
+			a == a++
+
+*/

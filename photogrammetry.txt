@@ -1,0 +1,91 @@
+#include <Arduino.h>
+float step0;
+int button = 6;
+int zdjn = 4;
+int sStatus = 0;
+int ile = 0;
+int stepInc = 0;
+int but20 = 8;
+int but45 = 7;
+int but60 = 9;
+int but90 = 10;
+int but20s = 0;
+int but45s = 0;
+int but60s = 0;
+int but90s = 0;
+
+void setup() {
+  Serial.begin(115200);  
+  //Serial.println("\r\n\r\n");
+  //delay(200);
+  //Serial.flush();
+  //delay(200);
+  //Serial.println("G91");
+  //Serial.println("G40");
+  //Serial.println("G92");
+  //Serial.write("M17");
+  pinMode(button, INPUT);
+  pinMode(but20, INPUT);
+  pinMode(but45, INPUT);
+  pinMode(but60, INPUT);
+  pinMode(but90, INPUT);
+  pinMode(zdjn, OUTPUT);
+  step0=0;
+}
+
+void loop() {
+  but20s = digitalRead(but20);
+  but45s = digitalRead(but45);
+  but60s = digitalRead(but60);
+  but90s = digitalRead(but90);
+  sStatus = digitalRead(button);
+  if(but20s == HIGH){
+    ile = 20;
+    stepInc = 261;
+    Serial.println("M17");
+    Serial.println("G50");
+  }
+  if(but45s == HIGH){
+    ile = 45;
+    stepInc = 116;
+    Serial.println("M17");
+    Serial.println("G50");    
+  }
+  if(but60s == HIGH){
+    ile = 60;
+    stepInc = 87;
+    Serial.println("M17");
+    Serial.println("G50");
+  }
+  if(but90s == HIGH){
+    ile = 90;
+    stepInc = 58;
+    Serial.println("M17");
+    Serial.println("G50");
+  }
+
+  if(sStatus == HIGH){  
+    Serial.println("F60");
+    for(int i=0; i<=ile; i++){
+    	delay(500);
+    	Serial.println(String("x")+step0);
+    	//Serial.println("x500");
+    	delay(2500);
+    	digitalWrite(zdjn, HIGH);
+    	delay(500);
+    	digitalWrite(zdjn, LOW);
+    	step0 = step0 + stepInc;
+    	delay(500);
+    }
+    Serial.println("M18");
+    Serial.println("G50");
+  }
+  /*
+			i 44  --  step0 = step0+116
+			i 89	--	step0 = step0+58
+			i 59	--	step0 = step0+87
+			i 19	--	step0 = step0+261
+  */
+
+  step0=0;
+}
